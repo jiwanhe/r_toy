@@ -1,0 +1,16 @@
+{
+  "id": "ai-toy-relay",
+  "name": "AI 玩具控制（中繼版）",
+  "version": "1.0.0",
+  "description": "監控聊天指令，經 Cloudflare 中繼由 iPad 控制玩具（退出頁面不失效）",
+  "author": "you",
+  "entry": "https://你的Gist固定版本/roche-toy-plugin.js",
+  "hash": "",
+  "permissions": [
+    "storage",
+    "ui",
+    "conversation:read",
+    "memory:read",
+    "persona:read"
+  ]
+}
