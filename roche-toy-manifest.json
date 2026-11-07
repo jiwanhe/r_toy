@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "監控聊天指令，經 Cloudflare 中繼由 iPad 控制玩具（退出頁面不失效）",
   "author": "you",
-  "entry": "https://你的Gist固定版本/roche-toy-plugin.js",
+  "entry": "https://raw.githubusercontent.com/jiwanhe/r_toy/refs/heads/main/roche-toy-plugin.js",
   "hash": "",
   "permissions": [
     "storage",
