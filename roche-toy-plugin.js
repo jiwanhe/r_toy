@@ -29,6 +29,7 @@
     monitorInterval: null,
     lastVibe: 0,
     lastEstim: 0,
+    lastPump: 0,
     lastCmdText: '待命',
     onStatusChange: null,   // UI 開著時的回呼
   };
@@ -46,16 +47,20 @@
     const all = [...text.matchAll(/\[toy:([^\]]+)\]/gi)];
     if (!all.length) return null;
     const inner = all[all.length - 1][1].trim();   // 只取最後一個
-    if (/^停|^stop$/i.test(inner)) return { stop: true, vibe: 0, estim: 0 };
-    const nums = inner.match(/^(\d+)\s*:\s*(\d+)$/);
-    if (nums) return { vibe: clamp(+nums[1]), estim: clamp(+nums[2]) };
-    // 語意詞：相對目前值增減
-    let v = S.lastVibe, e = S.lastEstim;
+    if (/^停|^stop$/i.test(inner)) return { stop: true, vibe: 0, estim: 0, pump: 0 };
+    // 三通道：震動:電流:砲機
+    const three = inner.match(/^(\d+)\s*:\s*(\d+)\s*:\s*(\d+)$/);
+    if (three) return { vibe: clamp(+three[1]), estim: clamp(+three[2]), pump: clamp(+three[3]) };
+    // 兩通道：震動:電流（砲機維持）
+    const two = inner.match(/^(\d+)\s*:\s*(\d+)$/);
+    if (two) return { vibe: clamp(+two[1]), estim: clamp(+two[2]), pump: S.lastPump };
+    // 語意詞：相對目前值增減（作用在震動）
+    let v = S.lastVibe, e = S.lastEstim, p = S.lastPump;
     if (/更強|加強|強一點|increase|up/i.test(inner)) v = Math.min(100, v + 20);
     else if (/更弱|減弱|弱一點|輕|decrease|down/i.test(inner)) v = Math.max(0, v - 20);
     else if (/最強|max/i.test(inner)) v = 100;
     else { const s = inner.match(/^(\d+)$/); if (s) v = clamp(+s[1]); }
-    return { vibe: v, estim: e };
+    return { vibe: v, estim: e, pump: p };
   }
 
   // ============================================================
@@ -64,13 +69,13 @@
   async function sendRelay(cmd) {
     const { relay, secret } = S.settings;
     if (!relay || !secret) { updateLastCmd('⚠️ 未設定中繼'); return false; }
-    const q = cmd.stop ? 'stop=1' : `v=${cmd.vibe}&e=${cmd.estim}`;
+    const q = cmd.stop ? 'stop=1' : `v=${cmd.vibe}&e=${cmd.estim}&p=${cmd.pump}`;
     const url = `${relay.replace(/\/$/, '')}/set?k=${encodeURIComponent(secret)}&${q}`;
     try {
       const r = await fetch(url, { cache: 'no-store' });
       if (r.status === 403) { updateLastCmd('❌ 密語不符'); return false; }
-      S.lastVibe = cmd.vibe; S.lastEstim = cmd.estim;
-      updateLastCmd(cmd.stop ? '✅ 停止' : `✅ 震動${cmd.vibe} 電流${cmd.estim}`);
+      S.lastVibe = cmd.vibe; S.lastEstim = cmd.estim; S.lastPump = cmd.pump;
+      updateLastCmd(cmd.stop ? '✅ 停止' : `✅ 震${cmd.vibe} 電${cmd.estim} 砲${cmd.pump}`);
       return true;
     } catch (e) {
       updateLastCmd('❌ 送出失敗');
